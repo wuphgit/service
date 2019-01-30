@@ -1,0 +1,30 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+    name: kafka-init
+    namespace: {{ .Release.Namespace   }}
+data:
+    init.sh: |
+        #!/bin/bash
+        echo "---------------------kafka---------------------------"
+        sed -i "s|^broker.id=.*|broker.id=$1|g" /root/kafka_2.11-0.8.2.2/config/server.properties
+        sed -i "s|^listeners=.*|PLAINTEXT://`hostname`:9092|g" /root/kafka_2.11-0.8.2.2/config/server.properties
+        sed -i "s|^host.name=.*|host.name=`hostname`|g" /root/kafka_2.11-0.8.2.2/config/server.properties
+        cat /root/kafka_2.11-0.8.2.2/config/server.properties
+        echo "启动kafka"
+        nohup /root/kafka_2.11-0.8.2.2/bin/kafka-server-start.sh /root/kafka_2.11-0.8.2.2/config/server.properties & 
+        sleep 15s
+        if [[ $1 -eq 1 ]] ; then
+            echo "创建topic"
+            {{- range $key, $val := .Values.kafka.topic }}
+            /root/kafka_2.11-0.8.2.2/bin/kafka-topics.sh --create --zookeeper zookeeper001:2181,zookeeper001:2181,zookeeper001:2181 --replication-factor 3 --partitions 1 --topic {{ $key  }}
+            {{- end }}
+            echo "展示topic"
+            /root/kafka_2.11-0.8.2.2/bin/kafka-topics.sh --zookeeper zookeeper001:2181 --list
+        fi
+
+        tailf /dev/null
+
+    listen.list: |
+
+    depend.list: |

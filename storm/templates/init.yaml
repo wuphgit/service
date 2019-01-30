@@ -1,0 +1,28 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+    name: storm-init
+    namespace: {{ .Release.Namespace   }}
+data:
+    init.sh: |
+        #!/bin/bash
+        echo "----------------------storm--------------------------"
+        echo "启动storm"
+        if [[ $1 -eq 1 ]] ; then
+            echo "启动nimbus ui"
+            /root/apache-storm-0.9.6/bin/storm nimbus &
+            /root/apache-storm-0.9.6/bin/storm ui &
+        fi
+        /root/apache-storm-0.9.6/bin/storm supervisor &
+        if [[ $1 -eq 1  ]] ; then
+            echo "启动storm topology"
+            {{- range $key, $val := .Values.storm.topology }}
+            /root/apache-storm-0.9.6/bin/storm jar /root/jar/stormStatics.jar com.channelsoft.stormStatics.topology.{{ $key }} {{ $key }} zookeeper001,zookeeper002,zookeeper003 2181 {{ $val }} /brokers
+            {{- end }}
+        fi
+
+        tailf /dev/null
+
+    listen.list: |
+
+    depend.list: |

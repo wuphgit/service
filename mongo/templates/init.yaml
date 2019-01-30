@@ -1,0 +1,71 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+    name: mongo-init
+    namespace: {{ .Release.Namespace   }}
+data:
+    init.sh: |
+        #!/bin/bash
+        echo $1
+        mv /root/mongodb-linux-x86_64-amazon-3.2.12/ /root/mongo
+        mkdir -p /data/configServer/{log,data}
+        mkdir -p /data/mongos/log
+        mkdir -p /data/shard1/{log,data}
+        mkdir -p /data/shard2/{log,data}
+        mkdir -p /data/shard3/{log,data}
+        
+        echo "---------------启动shard1----------------------"
+        /root/mongo/bin/mongod -f /root/mongo/config/shardServer1.conf
+        if [[ $1 -eq 1 ]] ; then
+        echo '初始化shard1...'
+        echo '[shard1 data]: rs.initiate({ _id:"shard1ReplSet",members:[{_id:0,host:"mongo001:27017",priority:9},{_id:1,host:"mongo002:27017",priority:9},{_id:2,host:"mongo003:27017",priority:10}]})'
+        echo 'rs.initiate({ _id:"shard1ReplSet",members:[{_id:0,host:"mongo001:27017",priority:9},{_id:1,host:"mongo002:27017",priority:9},{_id:2,host:"mongo003:27017",priority:10}]})' | ./mongo mongo001:27017/admin
+        echo 'rs.status()' | ./mongo mongo001:27017/admin
+        fi
+
+        echo "---------------启动shard2----------------------"
+        /root/mongo/bin/mongod -f /root/mongo/config/shardServer2.conf
+        if [[ $1 -eq 1 ]] ; then
+        echo '初始化shard2...'
+        echo '[shard2 data]: rs.initiate({ _id:"shard2ReplSet",members:[{_id:0,host:"mongo001:27018",priority:9},{_id:1,host:"mongo002:27018",priority:10},{_id:2,host:"mongo003:27018",priority:9}]})'
+        echo 'rs.initiate({ _id:"shard2ReplSet",members:[{_id:0,host:"mongo001:27018",priority:9},{_id:1,host:"mongo002:27018",priority:10},{_id:2,host:"mongo003:27018",priority:9}]})' | ./mongo mongo001:27018/admin
+        echo 'rs.status()' | ./mongo mongo001:27018/admin
+        fi
+
+        echo "---------------启动shard3----------------------"
+        /root/mongo/bin/mongod -f /root/mongo/config/shardServer3.conf
+        if [[ $1 -eq 1 ]] ; then
+        echo '初始化shard3...'
+        echo '[shard3 data]: rs.initiate({ _id:"shard3ReplSet",members:[{_id:0,host:"mongo001:27019",priority:10},{_id:1,host:"mongo002:27019",priority:9},{_id:2,host:"mongo003:27019",priority:9}]})'
+        echo 'rs.initiate({ _id:"shard3ReplSet",members:[{_id:0,host:"mongo001:27019",priority:10},{_id:1,host:"mongo002:27019",priority:9},{_id:2,host:"mongo003:27019",priority:9}]})' | ./mongo mongo001:27019/admin
+        echo 'rs.status()' | ./mongo mongo001:27019/admin
+        fi
+
+        echo "---------------启动config-----------------------"
+        /root/mongo/bin/mongod -f /root/mongo/config/configServer.conf
+        if [[ $1 -eq 1 ]] ; then
+        echo '初始化config...'
+        echo '[config data]: rs.initiate({ _id:"configServerReplSet",members:[{_id:0,host:"mongo001:20000",priority:10},{_id:1,host:"mongo002:20000",priority:9},{_id:2,host:"mongo003:20000",priority:9}]})'
+        echo 'rs.initiate({ _id:"configServerReplSet",members:[{_id:0,host:"mongo001:20000",priority:10},{_id:1,host:"mongo002:20000",priority:9},{_id:2,host:"mongo003:20000",priority:9}]})' | ./mongo mongo001:20000/admin 
+        echo 'rs.status()' | ./mongo mongo001:20000/admin
+        fi
+         
+        echo "---------------启动mongos-----------------------"
+        /root/mongo/bin/mongos -f /root/mongo/config/mongo.conf
+        if [[ $1 -eq 1 ]] ; then
+        echo '初始化mongos...'
+        echo '[config data]: db.runCommand( { addshard :"shard1ReplSet/mongo001:27017,mongo002:27017,mongo003:27017",name:"s1",maxsize:40480})'
+        echo '[config data]: db.runCommand( { addshard :"shard2ReplSet/mongo001:27018,mongo002:27018,mongo003:27018",name:"s2",maxsize:40480})'
+        echo '[config data]: db.runCommand( { addshard :"shard3ReplSet/mongo001:27019,mongo002:27019,mongo003:27019",name:"s3",maxsize:40480})'
+        echo 'db.runCommand( { addshard :"shard1ReplSet/mongo001:27017,mongo002:27017,mongo003:27017",name:"s1",maxsize:40480})' | ./mongo mongo001:30000/admin
+        echo 'db.runCommand( { addshard :"shard2ReplSet/mongo001:27018,mongo002:27018,mongo003:27018",name:"s2",maxsize:40480})' | ./mongo mongo001:30000/admin
+        echo 'db.runCommand( { addshard :"shard3ReplSet/mongo001:27019,mongo002:27019,mongo003:27019",name:"s3",maxsize:40480})' | ./mongo mongo001:30000/admin
+        echo 'db.runCommand( { listshards : 1 } )' | ./mongo mongo001:30000/admin
+        fi
+
+        echo '---------------mongo启动完成--------------------'
+        tailf /dev/null
+
+    listen.list: |
+
+    depend.list: |

@@ -1,0 +1,39 @@
+{{ $count := default 3 .Values.options.enableMultiZookeeper | add 1 | int  }}
+{{- range untilStep 1 $count 1 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: zookeeper00{{ . }}
+    namespace: {{ $.Release.Namespace }}
+    labels:
+        name: zookeeper00{{ . }}
+spec:
+    selector:
+        name: zookeeper00{{ . }}
+    ports:
+    -   name: zookeeper-client
+        port: 2181
+        targetPort: 2181
+    -   name: zookeeper-port-1
+        port: 2182
+        targetPort: 2182
+    -   name: zookeeper-port-2
+        port: 3181
+        targetPort: 3181
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: zookeeper-client
+    namespace: {{ .Release.Namespace  }}
+    labels:
+      name: zookeeper001
+spec:
+    selector:
+        name: zookeeper001
+    type: NodePort
+    ports:
+    -   name: zookeeper-client
+        port: 2181

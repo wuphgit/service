@@ -1,0 +1,59 @@
+{{ $count := default 3 .Values.options.enableMultiZookeeper | add 1 | int  }}
+{{- range untilStep 1 $count 1}}
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: zookeeper00{{ . }}
+    namespace: {{ $.Release.Namespace }}
+    labels:
+        name: zookeeper00{{ . }}
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate
+    selector:
+        matchLabels:
+            name: zookeeper00{{ . }}
+    template:
+        metadata:
+            labels:
+                name: zookeeper00{{ . }}
+        spec: 
+            hostname: zookeeper00{{ . }}
+            terminationGracePeriodSeconds: 0
+            nodeName: {{ $.Values.runtime.machine.callNode }}
+            volumes:
+            -   name: zookeeper-data
+                hostPath:
+                    path: {{ $.Values.runtime.machine.mountRoot }}/{{ $.Release.Namespace }}/zookeeper00{{ . }}/data
+            -   name: zookeeper-log
+                hostPath:
+                    path: {{ $.Values.runtime.machine.mountRoot }}/{{ $.Release.Namespace }}/zookeeper00{{ . }}/log
+            -   name: init
+                configMap:
+                    name: zookeeper-init
+            containers: 
+            -   name: zookeeper00{{ . }}
+                imagePullPolicy: {{ if $.Values.develop }}Always{{ else }}IfNotPresent{{ end }}
+                image: {{ $.Values.runtime.image.harborHost }}/{{ $.Values.runtime.image.platform }}/zookeeper-3.4.6:{{ $.Values.runtime.image.version.zookeeper }}
+                ports:
+                -   containerPort: 2181
+                -   containerPort: 2182
+                -   containerPort: 3181
+                volumeMounts:
+                -   mountPath: /root/zookeeper-3.4.6/data
+                    name: zookeeper-data
+                -   mountPath: /root/zookeeper-3.4.6/log
+                    name: zookeeper-log
+                -   mountPath: /cfg-raw
+                    name: init
+                livenessProbe:
+                    initialDelaySeconds: 10
+                    periodSeconds: 10
+                    exec:
+                        command:
+                        -   /usr/local/bin/health-jobs
+                command: ["/bin/bash"]
+                args: ["/cfg-raw/init.sh","{{ . }}"]
+{{- end }}

@@ -1,0 +1,66 @@
+{{ $count := default 3 .Values.options.enableMultiRedis | add 1 | int   }}
+{{- range untilStep 1 $count 1}}
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: storm00{{ . }}
+    namespace: {{ $.Release.Namespace }}
+    labels:
+        name: storm00{{ . }}
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate
+    selector:
+        matchLabels:
+            name: storm00{{ . }}
+    template:
+        metadata:
+            labels:
+                name: storm00{{ . }}
+        spec: 
+            hostname: storm00{{ . }}
+            terminationGracePeriodSeconds: 0
+            nodeName: {{ $.Values.runtime.machine.callNode }}
+            volumes:
+            -   name: storm-logs
+                hostPath:
+                    path: {{ $.Values.runtime.machine.mountRoot }}/{{ $.Release.Namespace }}/storm00{{ . }}/logs
+            -   name: storm-data
+                hostPath:
+                    path: {{ $.Values.runtime.machine.mountRoot }}/{{ $.Release.Namespace }}/storm00{{ . }}/data
+            -   name: init
+                configMap:
+                    name: storm-init
+            containers: 
+            -   name: storm00{{ . }}
+                imagePullPolicy: {{ if $.Values.develop }}Always{{ else }}IfNotPresent{{ end }}
+                image: {{ $.Values.runtime.image.harborHost }}/szlt/stormstatics:{{ $.Values.runtime.image.version.stormstatics }}
+                ports:
+                -   containerPort: 8080
+                -   containerPort: 6700
+                -   containerPort: 6701
+                -   containerPort: 6702
+                -   containerPort: 6703
+                -   containerPort: 6704
+                -   containerPort: 6705
+                -   containerPort: 6706
+                -   containerPort: 6707
+                -   containerPort: 6708
+                volumeMounts:
+                -   mountPath: /root/apache-storm-0.9.6/logs
+                    name : storm-logs
+                -   mountPath: /root/apache-storm-0.9.6/data
+                    name: storm-data
+                -   mountPath: /cfg-raw
+                    name: init
+                livenessProbe:
+                    initialDelaySeconds: 10
+                    periodSeconds: 10
+                    exec:
+                        command:
+                        -   /usr/local/bin/health-jobs
+                command: ["/bin/bash"]
+                args: ["/cfg-raw/init.sh","{{ . }}"]
+{{- end }}

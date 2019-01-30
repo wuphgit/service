@@ -1,0 +1,81 @@
+runtime: 
+    machine: 
+        mountRoot: /var/ccod-runtime
+        callNode: master
+    image:
+        harborHost: harbor.io:1180
+        platform: sandbox
+        version: 
+            zookeeper: '0.1'
+            kafka: '0.1'
+            stormstatics: cbd0c7c0d2
+            redis: 0.1
+            mongo: 0.5
+options: 
+    enableMultiRedis: 3
+    enableMultiZookeeper: 3
+    enableMultiKafka: 3
+    enableMultiStorm: 3
+    enableMultiMongo: 3
+develop: false
+zookeeper: 
+    nodes: 
+        MONGO_HOST: 10.130.41.175:30000
+        MONGO_BLOCKSIZE: 100
+        MONGO_POOLSIZE: 100
+        MONGO_NAME: zl20181023
+        MONGO_PASSWORD: zl20181023
+        MONGO_ADMIN: admin
+        MONGO_SWITCH: 1
+
+        REDIS_MAX_WAIT: 1000
+        REDIS_MAX_IDLE: 200
+        REDIS_MAX_ACTIVE: 512
+        REDIS_TEST_ON_BORROW: true
+        REDIS_HOST: 10.130.29.226:27379;10.130.29.226:27380;10.130.29.226:27381
+        MASTER_NAME: server-1M
+        REDIS_PASSWORDS: 'null'
+        REDIS_TEST_ON_RETURN: 'null'
+        DB_NUMBER: 0
+
+        TOPO_MONGOBOLT_NUM: 3
+        TOPO_COMPUBOLT_NUM: 3
+        TOPO_SPOUT_NUM: 3
+        TOPO_WORK_NUM: 2
+        MAX_SPOUT_PENDING: 50
+        OFF_ON_REDIS: 1
+        OFF_ON_DTS: 0
+        ENTID_MESSAGE: 8989
+        KAFKA_ZOOKEEPER_CONNECT: kafka001:2181,kafka002:2181,kafka003:2181
+        SEND_MESSAGE: 1
+        MESSAGE_TOPIC: session_detail
+        KAFKA_BROKER_LIST: kafka001:9092,kafka002:9092,kafka003:9092
+        clients: 'null'
+        topics: 'null'
+        changes: 'null'
+kafka:
+    topic:
+        SessionDetail: 
+        SDHistoryMonitor: 
+        call_detail: 
+        sd_call_result: 
+        agentStateDetail: 
+        chatLog: 
+        ivr_message: 
+        new_r_ags_e: 
+        t_srvappraise: 
+        ent_record_bx_table: 
+        ent_record_fastdfs_url: 
+
+storm:
+    topology:
+        AgentStateDetailTopology: agentStateDetail
+        CallDetailTopology: call_detail
+        ChatLogTopology: chatLog
+        IVRMESSAGETopology: ivr_message
+        RAGSETopology: new_r_ags_e
+        TSrvappraiseTopology: t_srvappraise
+        BxRecordTopology: ent_record_bx_table
+        FastdfsUrlTopology: ent_record_fastdfs_url
+        SdCallResultTopology: sd_call_result
+

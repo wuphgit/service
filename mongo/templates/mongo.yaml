@@ -1,0 +1,56 @@
+{{ $count := default 3 .Values.options.enableMultiMongo | add 1 | int  }}
+{{- range untilStep 1 $count 1}}
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: mongo00{{ . }}
+    namespace: {{ $.Release.Namespace }}
+    labels:
+        name: mongo00{{ . }}
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate
+    selector:
+        matchLabels:
+            name: mongo00{{ . }}
+    template:
+        metadata:
+            labels:
+                name: mongo00{{ . }}
+        spec: 
+            hostname: mongo00{{ . }}
+            terminationGracePeriodSeconds: 0
+            nodeName: {{ $.Values.runtime.machine.callNode }}
+            volumes:
+            -   name: data
+                hostPath:
+                    path: {{ $.Values.runtime.machine.mountRoot }}/{{ $.Release.Namespace }}/mongo00{{ . }}
+            -   name: init
+                configMap:
+                    name: mongo-init
+            containers: 
+            -   name: mongo00{{ . }}
+                imagePullPolicy: {{ if $.Values.develop }}Always{{ else }}IfNotPresent{{ end }}
+                image: {{ $.Values.runtime.image.harborHost }}/{{ $.Values.runtime.image.platform }}/mongo-3.2.12:{{ $.Values.runtime.image.version.mongo }}
+                ports:
+                -   containerPort: 20000
+                -   containerPort: 21000
+                -   containerPort: 22000
+                -   containerPort: 23000
+                -   containerPort: 30000
+                volumeMounts:
+                -   mountPath: /data
+                    name: data
+                -   mountPath: /cfg-raw
+                    name: init
+                livenessProbe:
+                    initialDelaySeconds: 10
+                    periodSeconds: 10
+                    exec:
+                        command:
+                        -   /usr/local/bin/health-jobs
+                command: ["/bin/bash"]
+                args: ["/cfg-raw/init.sh","{{ . }}"]
+{{- end }}

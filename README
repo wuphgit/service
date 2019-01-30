@@ -1,0 +1,14 @@
+# service
+各种开源工具服务容器化
+
+kafka/
+一个部署kafka集群的kubernetes的yaml文件
+
+mongo/
+一个部署mongo集群(哨兵模式)的kubernetes的yaml文件
+
+zookeeper/
+一个部署zookeeper集群的kubernetes的yaml文件
+
+storm/
+一个部署storm集群的kubernetes的yaml文件

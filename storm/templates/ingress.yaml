@@ -1,0 +1,14 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+    namespace: {{ .Release.Namespace }}
+    name: storm
+spec:
+    rules:
+    -   host: {{ .Release.Namespace }}.storm.io
+        http:
+            paths:
+            -   backend:
+                    serviceName: storm001
+                    servicePort: 8080
+                path: /

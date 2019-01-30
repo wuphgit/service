@@ -1,0 +1,29 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+    name: zookeeper-init
+    namespace: {{ .Release.Namespace   }}
+data:
+    init.sh: |
+        #!/bin/bash
+        echo "--------------------zookeeper------------------------"
+        echo $1 > /root/zookeeper-3.4.6/data/myid
+        cat /root/zookeeper-3.4.6/data/myid
+        echo "启动zookeeper"
+        /root/zookeeper-3.4.6/bin/zkServer.sh start >> /root/zookeeper-3.4.6/log/zookeeper.out
+        sleep 15s
+        if [[ $1 -eq 1 ]] ; then
+            echo "添加节点信息"
+            echo "create /storm null" | /root/zookeeper-3.4.6/bin/zkCli.sh -server localhost:2181 > /dev/mull
+            echo "create /storm/config null" | /root/zookeeper-3.4.6/bin/zkCli.sh -server localhost:2181 > /dev/mull
+            {{- range $key, $val := .Values.zookeeper.nodes }}
+                echo "-----{{ $key }}:{{ $val }}-----"
+                echo "create /storm/config/{{ $key }} {{ $val }}" | /root/zookeeper-3.4.6/bin/zkCli.sh -server localhost:2181 > /dev/mull
+                echo "get /storm/config/{{ $key }}" | /root/zookeeper-3.4.6/bin/zkCli.sh -server localhost:2181 | sed -n 27,28p
+            {{- end }}
+        fi
+        tailf /dev/null
+
+    listen.list: |
+
+    depend.list: |

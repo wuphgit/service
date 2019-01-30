@@ -1,0 +1,4 @@
+apiVersion: v1
+description: zookeeper-3.4.6
+name: zookeeper
+version: 0.1

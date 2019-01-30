@@ -1,0 +1,57 @@
+{{ $count := default 3 .Values.options.enableMultiKafka | add 1 | int  }}
+{{- range untilStep 1 $count 1}}
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: kafka00{{ . }}
+    namespace: {{ $.Release.Namespace }}
+    labels:
+        name: kafka00{{ . }}
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate
+    selector:
+        matchLabels:
+            name: kafka00{{ . }}
+    template:
+        metadata:
+            labels:
+                name: kafka00{{ . }}
+        spec: 
+            hostname: kafka00{{ . }}
+            terminationGracePeriodSeconds: 0
+            nodeName: {{ $.Values.runtime.machine.callNode }}
+            volumes:
+            -   name: kafka-logs
+                hostPath:
+                    path: {{ $.Values.runtime.machine.mountRoot }}/{{ $.Release.Namespace }}//kafka00{{ . }}/logs
+            -   name: kafka-log
+                hostPath:
+                    path: {{ $.Values.runtime.machine.mountRoot }}/{{ $.Release.Namespace }}/kafka00{{ . }}/log
+            -   name: init
+                configMap:
+                    name: kafka-init
+            containers: 
+            -   name: kafka00{{ . }}
+                imagePullPolicy: {{ if $.Values.develop }}Always{{ else }}IfNotPresent{{ end }}
+                image: {{ $.Values.runtime.image.harborHost }}/{{ $.Values.runtime.image.platform }}/kafka-2.11-0.8.2.2:{{ $.Values.runtime.image.version.kafka  }}
+                ports:
+                -   containerPort: 9092
+                volumeMounts:
+                -   mountPath: /root/kafka_2.11-0.8.2.2/log
+                    name: kafka-log
+                -   mountPath: /root/kafka_2.11-0.8.2.2/logs
+                    name: kafka-logs
+                -   mountPath: /cfg-raw
+                    name: init
+                livenessProbe:
+                    initialDelaySeconds: 10
+                    periodSeconds: 10
+                    exec:
+                        command:
+                        -   /usr/local/bin/health-jobs
+                command: ["/bin/bash"]
+                args: ["/cfg-raw/init.sh", "{{ . }}"]
+{{- end }}

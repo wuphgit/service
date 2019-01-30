@@ -1,0 +1,45 @@
+{{ $count := default 3 .Values.options.enableMultiRedis | add 1 | int   }}
+{{- range untilStep 1 $count 1}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: storm00{{ . }}
+    namespace: {{ $.Release.Namespace }}
+    labels:
+        name: storm00{{ . }}
+spec:
+    selector:
+        name: storm00{{ . }}
+    ports:
+    -   name: storm-ui
+        port: 8080
+        targetPort: 8080
+    -   name: storm-port0
+        port: 6700
+        targetPort: 6700
+    -   name: storm-port1
+        port: 6701
+        targetPort: 6701
+    -   name: storm-port2
+        port: 6702
+        targetPort: 6702
+    -   name: storm-port3
+        port: 6703
+        targetPort: 6703
+    -   name: storm-port4
+        port: 6704
+        targetPort: 6704
+    -   name: storm-port5
+        port: 6705
+        targetPort: 6705
+    -   name: storm-port6
+        port: 6706
+        targetPort: 6706
+    -   name: storm-port7
+        port: 6707
+        targetPort: 6707
+    -   name: storm-port8
+        port: 6708
+        targetPort: 6708
+{{- end }}
